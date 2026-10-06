@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{subject}}</title>
+    <style>
+      body { margin: 0; padding: 0; background-color: #f4eefc; font-family: Arial, Helvetica, sans-serif; }
+      .preheader { display: none; max-height: 0; overflow: hidden; opacity: 0; }
+      a.button:hover { background-color: #e07a5f !important; }
+    </style>
+  </head>
+  <body>
+    <div class="preheader">{{preheader}}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4eefc;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background:linear-gradient(135deg,#ff9d80,#e07a5f);padding:28px 32px;">
+                <span style="font-size:20px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">🐾 TJDiscipline</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:32px;">
+                <h1 style="margin:0 0 12px;font-size:20px;color:#241f30;">Chào {{name}},</h1>
+                <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#4b4458;">
+                  Cảm ơn bạn đã đăng ký! Nhấn nút bên dưới để xác nhận email và bắt đầu nuôi thú cưng, cây cảnh của riêng mình bằng thói quen dậy sớm mỗi ngày.
+                </p>
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+                  <tr>
+                    <td style="border-radius:8px;background-color:#ff9d80;">
+                      <a href="{{confirmUrl}}" class="button" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:600;color:#2a1a14;text-decoration:none;border-radius:8px;">
+                        Xác nhận email
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#6b6476;">
+                  Nếu nút bấm không hoạt động, hãy sao chép đường link sau vào trình duyệt:
+                </p>
+                <p style="margin:0 0 20px;font-size:13px;line-height:1.6;word-break:break-all;color:#e07a5f;">
+                  {{confirmUrl}}
+                </p>
+                <p style="margin:0;font-size:13px;line-height:1.6;color:#978ca8;">
+                  Nếu bạn không tạo tài khoản này, hãy bỏ qua email này.
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:20px 32px;background-color:#faf7ff;border-top:1px solid #ece6f7;">
+                <p style="margin:0;font-size:12px;color:#978ca8;">© {{year}} TJDiscipline.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

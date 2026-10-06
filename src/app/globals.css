@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f0c16;
+  --background-soft: #15111f;
+  --surface: #1b1726;
+  --surface-elevated: #231d33;
+  --border: #322b44;
+  --text: #f5eefc;
+  --text-muted: #a79bc4;
+  --text-faint: #786d93;
+
+  --primary: #ff9d80;
+  --primary-soft: #ffcab0;
+  --primary-dark: #e07a5f;
+
+  --gold: #f0c988;
+  --gold-soft: #fbe3ae;
+
+  --mint: #8fe3c0;
+  --mint-soft: #c2f5e1;
+
+  --sad: #c9828f;
+  --sad-soft: #e3b4bc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-background-soft: var(--background-soft);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-dark: var(--primary-dark);
+
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+
+  --color-mint: var(--mint);
+  --color-mint-soft: var(--mint-soft);
+
+  --color-sad: var(--sad);
+  --color-sad-soft: var(--sad-soft);
+
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(circle at 50% -10%, #241c38 0%, var(--background) 45%, #0a0810 100%);
+  color: var(--text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  min-height: 100%;
+}
+
+::selection {
+  background: var(--primary);
+  color: #1b1320;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-4px) scale(1.015); }
+}
+.animate-breathe {
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes float-sparkle {
+  0% { transform: translateY(0) scale(0.9); opacity: 0.2; }
+  50% { transform: translateY(-14px) scale(1.1); opacity: 1; }
+  100% { transform: translateY(0) scale(0.9); opacity: 0.2; }
+}
+.animate-sparkle {
+  animation: float-sparkle 2.4s ease-in-out infinite;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  scrollbar-width: none;
+}
