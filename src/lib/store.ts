@@ -10,7 +10,7 @@ const HISTORY_CAP = 14;
 export interface CheckInResult {
   success: boolean;
   alreadyDone?: boolean;
-  onTime?: boolean;
+  outsideWindow?: boolean;
   streak?: number;
   stageUp?: boolean;
   newSpecies?: boolean;
@@ -139,6 +139,12 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
       return { success: false, alreadyDone: true };
     }
 
+    // Belt-and-suspenders: the button is already disabled outside the
+    // window, but guard the action itself in case it's ever called directly.
+    if (!isWithinWindow(state.wakeTime, state.windowMinutes)) {
+      return { success: false, outsideWindow: true };
+    }
+
     const gap = state.lastCheckInDate ? diffInDays(state.lastCheckInDate, today) : null;
     const continuesStreak = gap !== null && gap <= 1;
     const streakBroken = gap !== null && gap > 1;
@@ -149,7 +155,6 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
     const nextProgress = getActiveProgress(state.species, newTotal);
     const newSpecies = !!(prevProgress && nextProgress && prevProgress.species.id !== nextProgress.species.id);
     const stageUp = newSpecies || !!(prevProgress && nextProgress && nextProgress.stage > prevProgress.stage);
-    const onTime = isWithinWindow(state.wakeTime, state.windowMinutes);
     const newHistory = [...state.history, today].slice(-HISTORY_CAP);
 
     set({
@@ -170,7 +175,6 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
 
     return {
       success: true,
-      onTime,
       streak: newStreak,
       stageUp,
       newSpecies,

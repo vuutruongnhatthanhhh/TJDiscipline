@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
@@ -8,17 +8,41 @@ import CreatureStage from "@/components/creatures/CreatureStage";
 import Skeleton from "@/components/Skeleton";
 import { useAllSpecies, useDisciplineStore, useStoreHydrated } from "@/lib/store";
 import { nextStageInfo, getActiveProgress, STAGE_LABELS, CYCLE_LENGTH } from "@/lib/species";
-import { computeMood, formatFriendlyDate, isoDateOffset, startOfWeekMonday, todayISO, weekdayShort } from "@/lib/date";
+import {
+  computeMood,
+  formatFriendlyDate,
+  formatWindowRange,
+  isBeforeWindow,
+  isPastWindow,
+  isWithinWindow,
+  isoDateOffset,
+  startOfWeekMonday,
+  todayISO,
+  weekdayShort,
+} from "@/lib/date";
 
 export default function Dashboard() {
   const hydrated = useStoreHydrated();
   const allSpecies = useAllSpecies();
-  const { totalCheckIns, streak, bestStreak, lastCheckInDate, history, wakeTime, checkIn } = useDisciplineStore();
+  const { totalCheckIns, streak, bestStreak, lastCheckInDate, history, wakeTime, windowMinutes, checkIn } =
+    useDisciplineStore();
   const [toast, setToast] = useState<string | null>(null);
 
+  // Live clock so the check-in button enables/disables on its own as the
+  // window opens and closes, without needing a manual refresh.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
   const progress = getActiveProgress(allSpecies, totalCheckIns);
-  const mood = computeMood(lastCheckInDate);
   const checkedInToday = lastCheckInDate === todayISO();
+  const withinWindow = isWithinWindow(wakeTime, windowMinutes, now);
+  const beforeWindow = isBeforeWindow(wakeTime, windowMinutes, now);
+  const pastWindow = isPastWindow(wakeTime, windowMinutes, now);
+  const mood = computeMood(lastCheckInDate, wakeTime, windowMinutes, now);
+  const displayStreak = mood === "sad" ? 0 : streak;
 
   const weekStart = startOfWeekMonday();
   const week = Array.from({ length: 7 }, (_, i) => isoDateOffset(weekStart, i));
@@ -50,26 +74,38 @@ export default function Dashboard() {
 
   const handleCheckIn = async () => {
     const result = await checkIn();
-    if (!result.success) {
+    if (result.alreadyDone) {
       setToast("Bạn đã điểm danh hôm nay rồi, hẹn sáng mai nhé 🌙");
+    } else if (result.outsideWindow) {
+      setToast("Ngoài khung giờ điểm danh rồi, hẹn bạn vào khung giờ sau nhé ⏰");
     } else if (result.newSpecies) {
       setToast(`🎊 ${species.name} đã trưởng thành hoàn toàn! Chào đón ${result.newSpeciesName}!`);
     } else if (result.stageUp) {
       setToast(`🎉 ${species.name} đã lớn thêm một bậc rồi!`);
-    } else if (result.onTime) {
-      setToast("Điểm danh thành công! Đúng giờ tuyệt vời ☀️");
     } else {
-      setToast("Điểm danh thành công! Cố dậy sớm hơn vào ngày mai nhé 💪");
+      setToast("Điểm danh thành công! Đúng giờ tuyệt vời ☀️");
     }
     setTimeout(() => setToast(null), 3000);
   };
 
+  const windowRange = formatWindowRange(wakeTime, windowMinutes);
   const moodCopy =
     mood === "happy"
       ? `${species.name} đang rất vui vì được gặp bạn hôm nay!`
       : mood === "sad"
-      ? `${species.name} đang ${species.kind === "pet" ? "đói và gầy gò" : "héo"} vì bạn đã quên điểm danh. Chăm em ngay nhé!`
-      : `${species.name} đang chờ bạn điểm danh lúc ${wakeTime} sáng...`;
+      ? `${species.name} đang ${species.kind === "pet" ? "đói và gầy gò" : "héo"} vì bạn đã lỡ khung giờ điểm danh hôm nay. Mai nhớ quay lại nhé!`
+      : beforeWindow
+      ? `${species.name} đang chờ bạn điểm danh lúc ${windowRange}...`
+      : `${species.name} đang chờ — còn kịp điểm danh trong khung giờ ${windowRange}!`;
+
+  const checkInLabel = checkedInToday
+    ? "✅ Đã điểm danh hôm nay"
+    : beforeWindow
+    ? `⏳ Chưa tới giờ (${windowRange})`
+    : pastWindow
+    ? "😢 Đã lỡ khung giờ hôm nay"
+    : "☀️ Điểm danh dậy sớm";
+  const checkInDisabled = checkedInToday || !withinWindow;
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-6 md:mx-auto md:max-w-5xl md:px-10 md:pt-10">
@@ -92,7 +128,7 @@ export default function Dashboard() {
           <h1 className="font-display text-2xl font-bold text-text">TJDiscipline</h1>
         </div>
         <div className="flex items-center gap-1 rounded-full bg-surface px-3 py-1.5 text-sm font-bold text-gold ring-1 ring-border">
-          🔥 {streak}
+          🔥 {displayStreak}
         </div>
       </header>
 
@@ -121,21 +157,21 @@ export default function Dashboard() {
 
           <button
             onClick={handleCheckIn}
-            disabled={checkedInToday}
+            disabled={checkInDisabled}
             className={clsx(
               "mt-4 w-full rounded-2xl py-3 text-center font-display text-base font-bold shadow-lg transition-all active:scale-[0.98]",
-              checkedInToday
+              checkInDisabled
                 ? "cursor-not-allowed bg-surface-elevated text-text-faint shadow-none ring-1 ring-border"
                 : "bg-linear-to-br from-primary to-primary-dark text-[#2a1a14] shadow-primary/30 hover:brightness-105"
             )}
           >
-            {checkedInToday ? "✅ Đã điểm danh hôm nay" : "☀️ Điểm danh dậy sớm"}
+            {checkInLabel}
           </button>
         </div>
 
         <div className="mt-6 flex flex-col gap-6 md:mt-0">
           <div className="grid grid-cols-3 gap-3">
-            <StatCard label="Streak" value={streak} icon="🔥" />
+            <StatCard label="Streak" value={displayStreak} icon="🔥" />
             <StatCard label="Kỷ lục" value={bestStreak} icon="🏆" />
             <StatCard label="Tổng điểm danh" value={totalCheckIns} icon="🗓️" />
           </div>

@@ -23,12 +23,27 @@ export function diffInDays(fromISO: string, toISO: string): number {
   return Math.round((b.getTime() - a.getTime()) / 86_400_000);
 }
 
-export function isWithinWindow(wakeTime: string, windowMinutes: number, now: Date = new Date()): boolean {
+export function getWindowBounds(wakeTime: string, windowMinutes: number, now: Date = new Date()): { start: Date; end: Date } {
   const [h, m] = wakeTime.split(":").map(Number);
   const start = new Date(now);
   start.setHours(h, m, 0, 0);
   const end = new Date(start.getTime() + windowMinutes * 60_000);
+  return { start, end };
+}
+
+export function isWithinWindow(wakeTime: string, windowMinutes: number, now: Date = new Date()): boolean {
+  const { start, end } = getWindowBounds(wakeTime, windowMinutes, now);
   return now.getTime() >= start.getTime() && now.getTime() <= end.getTime();
+}
+
+export function isBeforeWindow(wakeTime: string, windowMinutes: number, now: Date = new Date()): boolean {
+  const { start } = getWindowBounds(wakeTime, windowMinutes, now);
+  return now.getTime() < start.getTime();
+}
+
+export function isPastWindow(wakeTime: string, windowMinutes: number, now: Date = new Date()): boolean {
+  const { end } = getWindowBounds(wakeTime, windowMinutes, now);
+  return now.getTime() > end.getTime();
 }
 
 const WEEKDAY_LONG_VI = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
@@ -49,6 +64,11 @@ export function formatFriendlyDate(now: Date = new Date()): string {
   return `${WEEKDAY_LONG_VI[now.getDay()]}, ${pad2(now.getDate())}/${pad2(now.getMonth() + 1)}`;
 }
 
+export function formatWindowRange(wakeTime: string, windowMinutes: number): string {
+  const { start, end } = getWindowBounds(wakeTime, windowMinutes);
+  return `${formatClock(start)} – ${formatClock(end)}`;
+}
+
 export function weekdayShort(isoDate: string): string {
   const d = new Date(`${isoDate}T00:00:00`);
   return WEEKDAY_SHORT_VI[d.getDay()];
@@ -61,9 +81,17 @@ export function startOfWeekMonday(isoDate: string = todayISO()): string {
   return isoDateOffset(isoDate, offsetToMonday);
 }
 
-export function computeMood(lastCheckInDate: string | null, today: string = todayISO()): Mood {
-  if (!lastCheckInDate) return "neutral";
+// "sad" (đói/héo) kicks in the moment today's check-in window has closed
+// without a check-in — not only after skipping a whole day — since the
+// check-in button itself is only clickable inside that window.
+export function computeMood(
+  lastCheckInDate: string | null,
+  wakeTime: string,
+  windowMinutes: number,
+  now: Date = new Date()
+): Mood {
+  const today = todayISO();
   if (lastCheckInDate === today) return "happy";
-  const gap = diffInDays(lastCheckInDate, today);
-  return gap <= 1 ? "neutral" : "sad";
+  if (!lastCheckInDate) return "neutral"; // brand new account, nothing missed yet
+  return isPastWindow(wakeTime, windowMinutes, now) ? "sad" : "neutral";
 }
