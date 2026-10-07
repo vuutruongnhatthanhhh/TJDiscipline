@@ -72,6 +72,7 @@ export default function SettingsPage() {
   const [accountEmail, setAccountEmail] = useState<string | null>(null);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return;
@@ -81,6 +82,11 @@ export default function SettingsPage() {
       setAccountEmail(data.user.email ?? null);
       setAccountName((data.user.user_metadata?.full_name as string | undefined) ?? null);
     });
+
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => setIsAdmin(!!data.isAdmin))
+      .catch(() => setIsAdmin(false));
   }, []);
 
   async function handleSignOut() {
@@ -117,16 +123,18 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      <Link
-        href="/admin"
-        className="flex items-center justify-between rounded-3xl bg-surface p-5 ring-1 ring-border"
-      >
-        <div>
-          <p className="text-sm font-bold text-text">🛠️ Trang quản trị</p>
-          <p className="text-xs text-text-muted">Thêm/sửa thú cưng &amp; cây cảnh</p>
-        </div>
-        <span className="text-text-faint">→</span>
-      </Link>
+      {isAdmin && (
+        <Link
+          href="/admin"
+          className="flex items-center justify-between rounded-3xl bg-surface p-5 ring-1 ring-border"
+        >
+          <div>
+            <p className="text-sm font-bold text-text">🛠️ Trang quản trị</p>
+            <p className="text-xs text-text-muted">Thêm/sửa thú cưng &amp; cây cảnh</p>
+          </div>
+          <span className="text-text-faint">→</span>
+        </Link>
+      )}
 
       <div className="rounded-3xl bg-surface p-5 ring-1 ring-border">
         <p className="text-sm font-bold text-text">Thông tin hiện tại</p>

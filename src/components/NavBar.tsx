@@ -1,50 +1,103 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
 const TABS = [
   { href: "/", label: "Trang chủ", icon: "🏡" },
+  { href: "/explore", label: "Khám phá", icon: "🧭" },
   { href: "/collection", label: "Bộ sưu tập", icon: "📖" },
   { href: "/settings", label: "Cài đặt", icon: "⏰" },
 ];
 
 export default function NavBar() {
   const pathname = usePathname();
+  const [isMenuOpen, setMenuOpen] = useState(false);
+
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <nav
-      className={[
-        "order-2 flex shrink-0 items-stretch gap-1 border-t border-border bg-surface/90 px-3 py-2 backdrop-blur",
-        "md:order-1 md:w-56 md:flex-col md:items-stretch md:gap-2 md:border-t-0 md:border-r md:bg-surface md:px-4 md:py-6 md:backdrop-blur-none",
-      ].join(" ")}
-    >
-      <div className="mb-2 hidden items-center gap-2 px-2 md:flex">
-        <span className="text-2xl leading-none">🐾🌱</span>
-        <div>
+    <>
+      <header className="flex shrink-0 items-center justify-between border-b border-border bg-surface/90 px-4 py-3 backdrop-blur md:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-xl leading-none">🐾🌱</span>
           <p className="font-display text-sm font-bold leading-tight text-text">TJDiscipline</p>
-          <p className="text-xs leading-tight text-text-muted">Dậy sớm mỗi ngày</p>
         </div>
+        <button
+          onClick={() => setMenuOpen(true)}
+          aria-label="Mở menu"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-text-muted ring-1 ring-border"
+        >
+          ☰
+        </button>
+      </header>
+
+      {isMenuOpen && (
+        <div className="absolute inset-0 z-40 bg-black/40 md:hidden" onClick={() => setMenuOpen(false)} />
+      )}
+
+      <div
+        className={clsx(
+          "absolute right-0 top-0 z-50 flex h-full w-[78%] max-w-xs flex-col bg-surface shadow-2xl shadow-black/40 ring-1 ring-border transition-transform duration-300 ease-in-out md:hidden",
+          isMenuOpen ? "translate-x-0" : "translate-x-full"
+        )}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xl leading-none">🐾🌱</span>
+            <p className="font-display text-sm font-bold leading-tight text-text">TJDiscipline</p>
+          </div>
+          <button
+            onClick={() => setMenuOpen(false)}
+            aria-label="Đóng menu"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-xl text-text-muted ring-1 ring-border"
+          >
+            ✕
+          </button>
+        </div>
+        <nav className="flex flex-col gap-1 px-3 py-4">
+          {TABS.map((tab) => (
+            <Link
+              key={tab.href}
+              href={tab.href}
+              onClick={() => setMenuOpen(false)}
+              className={clsx(
+                "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+                isActive(tab.href) ? "bg-primary/15 text-primary-soft" : "text-text-faint hover:text-text-muted"
+              )}
+            >
+              <span className="text-lg leading-none">{tab.icon}</span>
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
       </div>
 
-      {TABS.map((tab) => {
-        const active = tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
-        return (
+      <nav className="hidden shrink-0 flex-col gap-2 border-r border-border bg-surface px-4 py-6 md:flex md:w-56">
+        <div className="mb-2 flex items-center gap-2 px-2">
+          <span className="text-2xl leading-none">🐾🌱</span>
+          <div>
+            <p className="font-display text-sm font-bold leading-tight text-text">TJDiscipline</p>
+            <p className="text-xs leading-tight text-text-muted">Dậy sớm mỗi ngày</p>
+          </div>
+        </div>
+
+        {TABS.map((tab) => (
           <Link
             key={tab.href}
             href={tab.href}
             className={clsx(
-              "flex flex-1 flex-col items-center gap-0.5 rounded-2xl py-2 text-xs font-semibold transition-colors",
-              "md:flex-none md:flex-row md:justify-start md:gap-2.5 md:rounded-xl md:px-3 md:py-2.5 md:text-sm",
-              active ? "bg-primary/15 text-primary-soft" : "text-text-faint hover:text-text-muted"
+              "flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
+              isActive(tab.href) ? "bg-primary/15 text-primary-soft" : "text-text-faint hover:text-text-muted"
             )}
           >
             <span className="text-lg leading-none">{tab.icon}</span>
             {tab.label}
           </Link>
-        );
-      })}
-    </nav>
+        ))}
+      </nav>
+    </>
   );
 }
