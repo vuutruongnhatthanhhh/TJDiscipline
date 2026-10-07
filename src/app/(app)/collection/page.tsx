@@ -5,12 +5,12 @@ import clsx from "clsx";
 import CreatureStage from "@/components/creatures/CreatureStage";
 import Skeleton from "@/components/Skeleton";
 import { useAllSpecies, useDisciplineStore, useStoreHydrated } from "@/lib/store";
-import { getSpeciesProgress, type Species } from "@/lib/species";
+import { getSpeciesProgress, getPlantProgress, type Species, type SpeciesProgress } from "@/lib/species";
 
 export default function CollectionPage() {
   const hydrated = useStoreHydrated();
   const allSpecies = useAllSpecies();
-  const { totalCheckIns } = useDisciplineStore();
+  const { totalCheckIns, totalFocusMinutes } = useDisciplineStore();
 
   const pets = allSpecies.filter((s) => s.kind === "pet");
   const plants = allSpecies.filter((s) => s.kind === "plant");
@@ -21,7 +21,8 @@ export default function CollectionPage() {
         <p className="text-sm font-medium text-text-muted">Bộ sưu tập</p>
         <h1 className="font-display text-2xl font-bold text-text">Thú cưng &amp; Cây cảnh</h1>
         <p className="mt-1 text-sm text-text-muted">
-          Nuôi lần lượt theo thứ tự — xong loài này tự chuyển sang loài tiếp theo. Chạm &quot;Xem trước&quot; để ngắm các mức trưởng thành dù chưa tới lượt.
+          Thú cưng lớn theo điểm danh, cây cảnh lớn theo thời gian tập trung Pomodoro — mỗi loài nuôi lần lượt theo
+          thứ tự của riêng mình. Chạm &quot;Xem trước&quot; để ngắm các mức trưởng thành dù chưa tới lượt.
         </p>
       </header>
 
@@ -39,13 +40,13 @@ export default function CollectionPage() {
 
           <Section title="Thú cưng" icon="🐾">
             {pets.map((s) => (
-              <SpeciesCard key={s.id} species={s} allSpecies={allSpecies} totalCheckIns={totalCheckIns} />
+              <SpeciesCard key={s.id} species={s} progress={getSpeciesProgress(pets, totalCheckIns, s.id)} />
             ))}
           </Section>
 
           <Section title="Cây cảnh" icon="🌿">
             {plants.map((s) => (
-              <SpeciesCard key={s.id} species={s} allSpecies={allSpecies} totalCheckIns={totalCheckIns} />
+              <SpeciesCard key={s.id} species={s} progress={getPlantProgress(plants, totalFocusMinutes, s.id)} />
             ))}
           </Section>
         </>
@@ -85,16 +86,8 @@ function Section({ title, icon, children }: { title: string; icon: string; child
   );
 }
 
-function SpeciesCard({
-  species,
-  allSpecies,
-  totalCheckIns,
-}: {
-  species: Species;
-  allSpecies: Species[];
-  totalCheckIns: number;
-}) {
-  const { stage, unlocked, isActive } = getSpeciesProgress(allSpecies, totalCheckIns, species.id);
+function SpeciesCard({ species, progress }: { species: Species; progress: SpeciesProgress }) {
+  const { stage, unlocked, isActive } = progress;
 
   return (
     <Link
@@ -104,7 +97,7 @@ function SpeciesCard({
         isActive ? "ring-primary" : "ring-border"
       )}
     >
-      <div className="relative shrink-0">
+      <div className={clsx("relative shrink-0", !unlocked && "opacity-50 grayscale")}>
         <CreatureStage species={species} stage={stage} mood="happy" size={88} />
         {!unlocked && (
           <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs ring-1 ring-border">

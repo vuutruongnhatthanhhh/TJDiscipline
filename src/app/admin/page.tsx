@@ -29,18 +29,20 @@ export default async function AdminSpeciesPage() {
       </div>
 
       <p className="rounded-2xl bg-surface p-3 text-xs text-text-muted ring-1 ring-border">
-        Thứ tự nuôi là thứ tự thêm loài ở đây (không phân biệt thú/cây) — nuôi xong loài #N thì tự chuyển sang loài #N+1.
+        Thú cưng và cây cảnh nuôi theo hai thứ tự riêng (theo thứ tự thêm ở đây). Thú cưng lớn theo điểm danh; nuôi
+        xong thú #N thì tự chuyển sang thú #N+1. Cây cảnh lớn theo thời gian tập trung Pomodoro (phút nuôi riêng cho
+        từng cây, chỉnh ở nút &quot;Sửa&quot;); nuôi xong cây #N thì tự chuyển sang cây #N+1.
       </p>
 
       <Section title="🐾 Thú cưng" empty={pets.length === 0}>
-        {pets.map((s) => (
-          <SpeciesRowItem key={s.id} species={s} order={species.indexOf(s) + 1} />
+        {pets.map((s, i) => (
+          <SpeciesRowItem key={s.id} species={s} order={i + 1} />
         ))}
       </Section>
 
       <Section title="🌿 Cây cảnh" empty={plants.length === 0}>
-        {plants.map((s) => (
-          <SpeciesRowItem key={s.id} species={s} order={species.indexOf(s) + 1} />
+        {plants.map((s, i) => (
+          <SpeciesRowItem key={s.id} species={s} order={i + 1} />
         ))}
       </Section>
     </div>
@@ -75,7 +77,10 @@ function SpeciesRowItem({ species, order }: { species: Species; order: number })
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-display font-bold text-text">{species.name}</p>
-        <p className="truncate text-xs text-text-muted">Thứ tự nuôi: #{order}</p>
+        <p className="truncate text-xs text-text-muted">
+          Thứ tự nuôi: #{order}
+          {species.kind === "plant" && ` • ${species.growMinutes} phút`}
+        </p>
       </div>
       <div className="flex shrink-0 gap-1.5">
         <Link

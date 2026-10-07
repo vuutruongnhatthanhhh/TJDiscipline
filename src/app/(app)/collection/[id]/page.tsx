@@ -7,14 +7,14 @@ import clsx from "clsx";
 import CreatureStage from "@/components/creatures/CreatureStage";
 import Skeleton from "@/components/Skeleton";
 import { useAllSpecies, useDisciplineStore, useStoreHydrated } from "@/lib/store";
-import { getSpeciesProgress, STAGE_LABELS } from "@/lib/species";
+import { getPlantProgress, getSpeciesProgress, STAGE_LABELS } from "@/lib/species";
 import type { Mood } from "@/lib/types";
 
 export default function SpeciesPreviewPage() {
   const params = useParams<{ id: string }>();
   const hydrated = useStoreHydrated();
   const allSpecies = useAllSpecies();
-  const { totalCheckIns } = useDisciplineStore();
+  const { totalCheckIns, totalFocusMinutes } = useDisciplineStore();
 
   const species = allSpecies.find((s) => s.id === params.id);
   const [previewStage, setPreviewStage] = useState(0);
@@ -36,9 +36,13 @@ export default function SpeciesPreviewPage() {
     );
   }
 
-  const { unlocked, isActive } = getSpeciesProgress(allSpecies, totalCheckIns, species.id);
+  const sameKind = allSpecies.filter((s) => s.kind === species.kind);
+  const { unlocked, isActive } =
+    species.kind === "pet"
+      ? getSpeciesProgress(sameKind, totalCheckIns, species.id)
+      : getPlantProgress(sameKind, totalFocusMinutes, species.id);
   const stageLabels = STAGE_LABELS[species.kind];
-  const order = allSpecies.findIndex((s) => s.id === species.id) + 1;
+  const order = sameKind.findIndex((s) => s.id === species.id) + 1;
 
   return (
     <div className="flex flex-col gap-6 px-5 pt-6 md:mx-auto md:max-w-2xl md:px-10 md:pt-10">
@@ -87,7 +91,9 @@ export default function SpeciesPreviewPage() {
       <div className="rounded-2xl bg-surface p-4 ring-1 ring-border">
         <p className="mb-1 text-sm font-bold text-text">Thứ tự nuôi</p>
         <p className="text-sm text-text-muted">
-          Loài thứ {order} trong bộ sưu tập — nuôi lần lượt từng loài, xong loài này tự chuyển sang loài tiếp theo.
+          {species.kind === "pet"
+            ? `Thú cưng thứ ${order} — nuôi lần lượt theo điểm danh, xong loài này tự chuyển sang loài tiếp theo.`
+            : `Cây cảnh thứ ${order} — nuôi lần lượt theo thời gian tập trung Pomodoro (${species.growMinutes} phút), xong cây này tự chuyển sang cây tiếp theo.`}
         </p>
       </div>
 

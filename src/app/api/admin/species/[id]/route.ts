@@ -27,6 +27,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 });
   }
 
+  let growMinutes = existing.grow_minutes as number;
+  if (existing.kind === "plant") {
+    growMinutes = Number(form.get("grow_minutes"));
+    if (!Number.isFinite(growMinutes) || growMinutes <= 0) {
+      return NextResponse.json({ error: "Thời gian nuôi (phút) phải lớn hơn 0" }, { status: 400 });
+    }
+  }
+
   const stageImages: string[] = [...(existing.stage_images as string[])];
   const oldUrlsToDelete: string[] = [];
 
@@ -50,6 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       name,
       tagline,
       description,
+      grow_minutes: growMinutes,
       stage_images: stageImages,
     })
     .eq("id", id);

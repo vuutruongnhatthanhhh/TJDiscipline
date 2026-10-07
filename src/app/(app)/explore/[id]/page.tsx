@@ -7,7 +7,7 @@ import clsx from "clsx";
 import CreatureStage from "@/components/creatures/CreatureStage";
 import Skeleton from "@/components/Skeleton";
 import { useAllSpecies } from "@/lib/store";
-import { getSpeciesProgress, type Species } from "@/lib/species";
+import { getPlantProgress, getSpeciesProgress, type Species, type SpeciesProgress } from "@/lib/species";
 
 interface ExplorePlayer {
   id: string;
@@ -15,6 +15,7 @@ interface ExplorePlayer {
   streak: number;
   bestStreak: number;
   totalCheckIns: number;
+  totalFocusMinutes: number;
 }
 
 export default function ExplorePlayerPage() {
@@ -64,7 +65,10 @@ export default function ExplorePlayerPage() {
         <div className="min-w-0 flex-1">
           <p className="truncate font-display text-lg font-bold text-text">{player.name}</p>
           <p className="text-xs text-text-muted">
-            🔥 Streak {player.streak} • 🏆 Kỷ lục {player.bestStreak} • 🗓️ Tổng điểm danh {player.totalCheckIns}
+            🔥 Streak {player.streak} • 🏆 Kỷ lục {player.bestStreak}
+          </p>
+          <p className="text-xs text-text-faint">
+            🗓️ {player.totalCheckIns} lần điểm danh • ⏱️ {player.totalFocusMinutes} phút tập trung
           </p>
         </div>
       </header>
@@ -78,13 +82,17 @@ export default function ExplorePlayerPage() {
         <>
           <Section title="Thú cưng" icon="🐾">
             {pets.map((s) => (
-              <ReadonlySpeciesCard key={s.id} species={s} allSpecies={allSpecies} totalCheckIns={player.totalCheckIns} />
+              <ReadonlySpeciesCard key={s.id} species={s} progress={getSpeciesProgress(pets, player.totalCheckIns, s.id)} />
             ))}
           </Section>
 
           <Section title="Cây cảnh" icon="🌿">
             {plants.map((s) => (
-              <ReadonlySpeciesCard key={s.id} species={s} allSpecies={allSpecies} totalCheckIns={player.totalCheckIns} />
+              <ReadonlySpeciesCard
+                key={s.id}
+                species={s}
+                progress={getPlantProgress(plants, player.totalFocusMinutes, s.id)}
+              />
             ))}
           </Section>
         </>
@@ -104,16 +112,8 @@ function Section({ title, icon, children }: { title: string; icon: string; child
   );
 }
 
-function ReadonlySpeciesCard({
-  species,
-  allSpecies,
-  totalCheckIns,
-}: {
-  species: Species;
-  allSpecies: Species[];
-  totalCheckIns: number;
-}) {
-  const { stage, unlocked, isActive } = getSpeciesProgress(allSpecies, totalCheckIns, species.id);
+function ReadonlySpeciesCard({ species, progress }: { species: Species; progress: SpeciesProgress }) {
+  const { stage, unlocked, isActive } = progress;
 
   return (
     <div
@@ -122,7 +122,7 @@ function ReadonlySpeciesCard({
         isActive ? "ring-primary" : "ring-border"
       )}
     >
-      <div className="relative shrink-0">
+      <div className={clsx("relative shrink-0", !unlocked && "opacity-50 grayscale")}>
         <CreatureStage species={species} stage={stage} mood="happy" size={88} />
         {!unlocked && (
           <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background text-xs ring-1 ring-border">

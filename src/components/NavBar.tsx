@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 
 const TABS = [
-  { href: "/", label: "Trang chủ", icon: "🏡" },
+  { href: "/", label: "Điểm danh", icon: "🏡" },
+  { href: "/pomodoro", label: "Pomodoro", icon: "🍅" },
   { href: "/explore", label: "Khám phá", icon: "🧭" },
   { href: "/collection", label: "Bộ sưu tập", icon: "📖" },
   { href: "/settings", label: "Cài đặt", icon: "⏰" },

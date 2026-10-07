@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { STAGE_LABELS, type Species, type SpeciesKind } from "@/lib/species";
+import { DEFAULT_GROW_MINUTES, STAGE_LABELS, type Species, type SpeciesKind } from "@/lib/species";
 
 interface SpeciesFormProps {
   mode: "create" | "edit";
@@ -17,6 +17,7 @@ export function SpeciesForm({ mode, initialKind, initial }: SpeciesFormProps) {
   const [name, setName] = useState(initial?.name ?? "");
   const [tagline, setTagline] = useState(initial?.tagline ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  const [growMinutes, setGrowMinutes] = useState(initial?.growMinutes ?? DEFAULT_GROW_MINUTES);
   const [files, setFiles] = useState<(File | null)[]>([null, null, null, null, null]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,6 +67,9 @@ export function SpeciesForm({ mode, initialKind, initial }: SpeciesFormProps) {
     form.set("name", name.trim());
     form.set("tagline", tagline.trim());
     form.set("description", description.trim());
+    if (kind === "plant") {
+      form.set("grow_minutes", String(growMinutes));
+    }
     files.forEach((file, i) => {
       if (file) form.set(`image${i}`, file);
     });
@@ -134,6 +138,27 @@ export function SpeciesForm({ mode, initialKind, initial }: SpeciesFormProps) {
           className="rounded-xl bg-background px-4 py-3 text-base text-text ring-1 ring-border placeholder:text-text-faint"
         />
       </div>
+
+      {kind === "plant" && (
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor="grow-minutes" className="text-sm font-bold text-text">
+            Thời gian nuôi (phút) *
+          </label>
+          <input
+            id="grow-minutes"
+            type="number"
+            min={1}
+            max={10000}
+            value={growMinutes}
+            onChange={(e) => setGrowMinutes(Math.max(1, Number(e.target.value) || 1))}
+            required
+            className="rounded-xl bg-background px-4 py-3 text-base text-text ring-1 ring-border"
+          />
+          <p className="text-xs text-text-faint">
+            Tổng số phút tập trung Pomodoro cần để cây này lớn hết 5 giai đoạn rồi mở khoá cây tiếp theo.
+          </p>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-bold text-text">

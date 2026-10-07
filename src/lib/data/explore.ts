@@ -6,6 +6,7 @@ export interface ExplorePlayer {
   streak: number;
   bestStreak: number;
   totalCheckIns: number;
+  totalFocusMinutes: number;
 }
 
 interface GameStateStats {
@@ -13,6 +14,7 @@ interface GameStateStats {
   streak: number;
   best_streak: number;
   total_check_ins: number;
+  total_focus_minutes: number;
 }
 
 function isBanned(bannedUntil: string | undefined): boolean {
@@ -30,7 +32,7 @@ export async function listExplorePlayers(excludeUserId: string): Promise<Explore
   const admin = createAdminClient();
   const [{ data: userData, error: userError }, { data: gameRows }] = await Promise.all([
     admin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-    admin.from("game_state").select("user_id, streak, best_streak, total_check_ins"),
+    admin.from("game_state").select("user_id, streak, best_streak, total_check_ins, total_focus_minutes"),
   ]);
   if (userError) throw userError;
 
@@ -46,9 +48,10 @@ export async function listExplorePlayers(excludeUserId: string): Promise<Explore
         streak: stats?.streak ?? 0,
         bestStreak: stats?.best_streak ?? 0,
         totalCheckIns: stats?.total_check_ins ?? 0,
+        totalFocusMinutes: stats?.total_focus_minutes ?? 0,
       };
     })
-    .filter((p) => p.totalCheckIns > 0)
+    .filter((p) => p.totalCheckIns > 0 || p.totalFocusMinutes > 0)
     .sort((a, b) => b.streak - a.streak || b.totalCheckIns - a.totalCheckIns);
 }
 
@@ -56,7 +59,11 @@ export async function getExplorePlayer(id: string): Promise<ExplorePlayer | null
   const admin = createAdminClient();
   const [{ data: userData, error: userError }, { data: gameRow }] = await Promise.all([
     admin.auth.admin.getUserById(id),
-    admin.from("game_state").select("streak, best_streak, total_check_ins").eq("user_id", id).maybeSingle(),
+    admin
+      .from("game_state")
+      .select("streak, best_streak, total_check_ins, total_focus_minutes")
+      .eq("user_id", id)
+      .maybeSingle(),
   ]);
   if (userError || !userData?.user || isBanned(userData.user.banned_until)) return null;
 
@@ -67,5 +74,6 @@ export async function getExplorePlayer(id: string): Promise<ExplorePlayer | null
     streak: gameRow?.streak ?? 0,
     bestStreak: gameRow?.best_streak ?? 0,
     totalCheckIns: gameRow?.total_check_ins ?? 0,
+    totalFocusMinutes: gameRow?.total_focus_minutes ?? 0,
   };
 }

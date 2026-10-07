@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { createClient } from "@/lib/supabase/client";
 import { diffInDays, isWithinWindow, todayISO } from "./date";
-import { getActiveProgress, mapSpeciesRow, type Species } from "./species";
+import { getActiveProgress, getPlantActiveProgress, mapSpeciesRow, type Species } from "./species";
 
 const HISTORY_CAP = 14;
 
@@ -18,6 +18,15 @@ export interface CheckInResult {
   streakBroken?: boolean;
 }
 
+export interface FocusSessionResult {
+  success: boolean;
+  minutes: number;
+  totalFocusMinutes: number;
+  stageUp?: boolean;
+  newSpecies?: boolean;
+  newSpeciesName?: string;
+}
+
 interface GameStateRow {
   wake_time: string;
   window_minutes: number;
@@ -26,6 +35,8 @@ interface GameStateRow {
   best_streak: number;
   last_check_in_date: string | null;
   history: string[];
+  total_focus_minutes: number;
+  pomodoro_minutes: number;
 }
 
 const DEFAULT_ROW: GameStateRow = {
@@ -36,6 +47,8 @@ const DEFAULT_ROW: GameStateRow = {
   best_streak: 0,
   last_check_in_date: null,
   history: [],
+  total_focus_minutes: 0,
+  pomodoro_minutes: 25,
 };
 
 interface DisciplineState {
@@ -47,11 +60,15 @@ interface DisciplineState {
   bestStreak: number;
   lastCheckInDate: string | null;
   history: string[];
+  totalFocusMinutes: number;
+  pomodoroMinutes: number;
   species: Species[];
   loadFromServer: () => Promise<void>;
   loadSpecies: () => Promise<void>;
   setWakeTime: (wakeTime: string, windowMinutes: number) => Promise<void>;
+  setPomodoroMinutes: (minutes: number) => Promise<void>;
   checkIn: () => Promise<CheckInResult>;
+  completeFocusSession: (minutes: number) => Promise<FocusSessionResult>;
   resetProgress: () => Promise<void>;
 }
 
@@ -74,6 +91,8 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
   bestStreak: DEFAULT_ROW.best_streak,
   lastCheckInDate: DEFAULT_ROW.last_check_in_date,
   history: DEFAULT_ROW.history,
+  totalFocusMinutes: DEFAULT_ROW.total_focus_minutes,
+  pomodoroMinutes: DEFAULT_ROW.pomodoro_minutes,
   species: [],
 
   loadFromServer: async () => {
@@ -108,6 +127,8 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
         bestStreak: data.best_streak,
         lastCheckInDate: data.last_check_in_date,
         history: data.history ?? [],
+        totalFocusMinutes: data.total_focus_minutes ?? 0,
+        pomodoroMinutes: data.pomodoro_minutes ?? DEFAULT_ROW.pomodoro_minutes,
         species,
         hydrated: true,
       });
@@ -131,6 +152,11 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
     await persistPatch({ wake_time: wakeTime, window_minutes: windowMinutes });
   },
 
+  setPomodoroMinutes: async (minutes) => {
+    set({ pomodoroMinutes: minutes });
+    await persistPatch({ pomodoro_minutes: minutes });
+  },
+
   checkIn: async () => {
     const state = get();
     const today = todayISO();
@@ -151,8 +177,9 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
     const newStreak = continuesStreak ? state.streak + 1 : 1;
     const newTotal = state.totalCheckIns + 1;
     const newBestStreak = Math.max(state.bestStreak, newStreak);
-    const prevProgress = getActiveProgress(state.species, state.totalCheckIns);
-    const nextProgress = getActiveProgress(state.species, newTotal);
+    const pets = state.species.filter((s) => s.kind === "pet");
+    const prevProgress = getActiveProgress(pets, state.totalCheckIns);
+    const nextProgress = getActiveProgress(pets, newTotal);
     const newSpecies = !!(prevProgress && nextProgress && prevProgress.species.id !== nextProgress.species.id);
     const stageUp = newSpecies || !!(prevProgress && nextProgress && nextProgress.stage > prevProgress.stage);
     const newHistory = [...state.history, today].slice(-HISTORY_CAP);
@@ -183,6 +210,32 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
     };
   },
 
+  completeFocusSession: async (minutes) => {
+    const state = get();
+    if (minutes <= 0) {
+      return { success: false, minutes: 0, totalFocusMinutes: state.totalFocusMinutes };
+    }
+
+    const newTotal = state.totalFocusMinutes + minutes;
+    const plants = state.species.filter((s) => s.kind === "plant");
+    const prevProgress = getPlantActiveProgress(plants, state.totalFocusMinutes);
+    const nextProgress = getPlantActiveProgress(plants, newTotal);
+    const newSpecies = !!(prevProgress && nextProgress && prevProgress.species.id !== nextProgress.species.id);
+    const stageUp = newSpecies || !!(prevProgress && nextProgress && nextProgress.stage > prevProgress.stage);
+
+    set({ totalFocusMinutes: newTotal });
+    await persistPatch({ total_focus_minutes: newTotal });
+
+    return {
+      success: true,
+      minutes,
+      totalFocusMinutes: newTotal,
+      stageUp,
+      newSpecies,
+      newSpeciesName: newSpecies ? nextProgress?.species.name : undefined,
+    };
+  },
+
   resetProgress: async () => {
     set({
       totalCheckIns: DEFAULT_ROW.total_check_ins,
@@ -190,6 +243,7 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
       bestStreak: DEFAULT_ROW.best_streak,
       lastCheckInDate: DEFAULT_ROW.last_check_in_date,
       history: DEFAULT_ROW.history,
+      totalFocusMinutes: DEFAULT_ROW.total_focus_minutes,
     });
     await persistPatch({
       total_check_ins: DEFAULT_ROW.total_check_ins,
@@ -197,6 +251,7 @@ export const useDisciplineStore = create<DisciplineState>()((set, get) => ({
       best_streak: DEFAULT_ROW.best_streak,
       last_check_in_date: DEFAULT_ROW.last_check_in_date,
       history: DEFAULT_ROW.history,
+      total_focus_minutes: DEFAULT_ROW.total_focus_minutes,
     });
   },
 }));

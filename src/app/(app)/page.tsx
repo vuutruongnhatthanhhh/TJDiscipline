@@ -36,7 +36,8 @@ export default function Dashboard() {
     return () => clearInterval(id);
   }, []);
 
-  const progress = getActiveProgress(allSpecies, totalCheckIns);
+  const pets = allSpecies.filter((s) => s.kind === "pet");
+  const progress = getActiveProgress(pets, totalCheckIns);
   const checkedInToday = lastCheckInDate === todayISO();
   const withinWindow = isWithinWindow(wakeTime, windowMinutes, now);
   const beforeWindow = isBeforeWindow(wakeTime, windowMinutes, now);
@@ -54,9 +55,11 @@ export default function Dashboard() {
   if (!progress) {
     return (
       <div className="flex flex-col items-center gap-3 px-6 pt-24 text-center">
-        <p className="text-4xl">🌱</p>
-        <p className="font-display text-lg font-bold text-text">Chưa có thú cưng hay cây nào</p>
-        <p className="text-sm text-text-muted">Vào trang quản trị để thêm loài đầu tiên nhé!</p>
+        <p className="text-4xl">🐾</p>
+        <p className="font-display text-lg font-bold text-text">Chưa có thú cưng nào</p>
+        <p className="text-sm text-text-muted">
+          Vào trang quản trị để thêm loài đầu tiên nhé! (Cây cảnh nuôi bằng Pomodoro nằm ở tab riêng.)
+        </p>
         <Link
           href="/admin"
           className="mt-2 rounded-full bg-linear-to-br from-primary to-primary-dark px-5 py-2.5 text-sm font-bold text-[#2a1a14] shadow-lg shadow-primary/30"

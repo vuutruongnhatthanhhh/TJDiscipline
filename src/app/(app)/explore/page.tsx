@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import clsx from "clsx";
 import Skeleton from "@/components/Skeleton";
 import { useAllSpecies } from "@/lib/store";
-import { getActiveIndex, type Species } from "@/lib/species";
+import { getActiveIndex, getPlantActiveIndex, type Species } from "@/lib/species";
 
 interface ExplorePlayer {
   id: string;
@@ -13,6 +12,7 @@ interface ExplorePlayer {
   streak: number;
   bestStreak: number;
   totalCheckIns: number;
+  totalFocusMinutes: number;
 }
 
 export default function ExplorePage() {
@@ -62,9 +62,10 @@ export default function ExplorePage() {
 }
 
 function PlayerCard({ player, allSpecies }: { player: ExplorePlayer; allSpecies: Species[] }) {
-  const activeIndex = getActiveIndex(allSpecies, player.totalCheckIns);
-  const unlockedCount = allSpecies.length === 0 ? 0 : Math.min(activeIndex + 1, allSpecies.length);
-  const progressPct = allSpecies.length === 0 ? 0 : Math.min(100, (unlockedCount / allSpecies.length) * 100);
+  const pets = allSpecies.filter((s) => s.kind === "pet");
+  const plants = allSpecies.filter((s) => s.kind === "plant");
+  const petActiveIndex = getActiveIndex(pets, player.totalCheckIns);
+  const plantActiveIndex = getPlantActiveIndex(plants, player.totalFocusMinutes);
 
   return (
     <Link
@@ -83,37 +84,71 @@ function PlayerCard({ player, allSpecies }: { player: ExplorePlayer; allSpecies:
         </div>
       </div>
 
+      <TrackStrip icon="🐾" label="Thú cưng" list={pets} activeIndex={petActiveIndex} />
+      <TrackStrip icon="🌿" label="Cây cảnh" list={plants} activeIndex={plantActiveIndex} />
+
+      <p className="text-xs text-text-faint">
+        🗓️ {player.totalCheckIns} lần điểm danh • ⏱️ {player.totalFocusMinutes} phút tập trung
+      </p>
+    </Link>
+  );
+}
+
+const STRIP_CAP = 5;
+
+function TrackStrip({
+  icon,
+  label,
+  list,
+  activeIndex,
+}: {
+  icon: string;
+  label: string;
+  list: Species[];
+  activeIndex: number;
+}) {
+  if (list.length === 0) return null;
+  const unlockedCount = Math.min(activeIndex + 1, list.length);
+  const progressPct = Math.min(100, (unlockedCount / list.length) * 100);
+
+  // Most recently owned first (the active species, then back toward the
+  // first), capped so a big collection doesn't blow out the card.
+  const ownedNewestFirst = list.slice(0, unlockedCount).reverse();
+  const shown = ownedNewestFirst.slice(0, STRIP_CAP);
+  const hasMore = ownedNewestFirst.length > STRIP_CAP;
+
+  return (
+    <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between text-xs">
-        <span className="font-bold text-text-muted">Bộ sưu tập</span>
+        <span className="font-bold text-text-muted">
+          {icon} {label}
+        </span>
         <span className="text-text-faint">
-          {unlockedCount}/{allSpecies.length} loài
+          {unlockedCount}/{list.length} loài
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-background">
         <div className="h-full rounded-full bg-linear-to-r from-mint to-primary" style={{ width: `${progressPct}%` }} />
       </div>
-
-      {allSpecies.length > 0 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {allSpecies.map((s, i) => (
-            <div
-              key={s.id}
-              className={clsx(
-                "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1",
-                i <= activeIndex ? "ring-primary/50" : "opacity-30 grayscale ring-border"
-              )}
-            >
-              {s.stageImages[0] && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.stageImages[0]} alt="" className="h-full w-full object-cover" />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <p className="text-xs text-text-faint">🗓️ Tổng điểm danh: {player.totalCheckIns}</p>
-    </Link>
+      <div className="flex gap-1.5">
+        {shown.map((s) => (
+          <div
+            key={s.id}
+            className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-primary/50"
+          >
+            {s.stageImages[0] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.stageImages[0]} alt="" className="h-full w-full object-cover" />
+            )}
+          </div>
+        ))}
+        {hasMore && (
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background text-xs font-bold text-text-faint ring-1 ring-border">
+            …
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

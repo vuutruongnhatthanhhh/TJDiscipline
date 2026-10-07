@@ -22,6 +22,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 });
   }
 
+  let growMinutes = 60;
+  if (kind === "plant") {
+    growMinutes = Number(form.get("grow_minutes"));
+    if (!Number.isFinite(growMinutes) || growMinutes <= 0) {
+      return NextResponse.json({ error: "Thời gian nuôi (phút) phải lớn hơn 0" }, { status: 400 });
+    }
+  }
+
   const files: File[] = [];
   for (let i = 0; i < 5; i++) {
     const f = form.get(`image${i}`);
@@ -56,6 +64,7 @@ export async function POST(req: NextRequest) {
     name,
     tagline,
     description,
+    grow_minutes: growMinutes,
     stage_images: stageImages,
     created_by: user.id,
   });
