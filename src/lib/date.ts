@@ -11,6 +11,12 @@ export function todayISO(): string {
   return toISODate(new Date());
 }
 
+// Same conversion, exposed for callers that already hold a Date (e.g. a
+// live clock passed down as `now`) instead of wanting "right now".
+export function dateToISO(d: Date): string {
+  return toISODate(d);
+}
+
 export function isoDateOffset(isoDate: string, offsetDays: number): string {
   const d = new Date(`${isoDate}T00:00:00`);
   d.setDate(d.getDate() + offsetDays);
@@ -46,8 +52,22 @@ export function isPastWindow(wakeTime: string, windowMinutes: number, now: Date 
   return now.getTime() > end.getTime();
 }
 
-const WEEKDAY_LONG_VI = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
-const WEEKDAY_SHORT_VI = ["CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7"];
+// Same as isPastWindow, but for an arbitrary (usually past) date instead of
+// "today" — used to work out whether a given day's check-in window has
+// closed, e.g. when scoring missed days in a shared goal's history.
+export function isPastWindowOnDate(
+  checkTime: string,
+  windowMinutes: number,
+  dateISO: string,
+  now: Date = new Date()
+): boolean {
+  const dayStart = new Date(`${dateISO}T00:00:00`);
+  const { end } = getWindowBounds(checkTime, windowMinutes, dayStart);
+  return now.getTime() > end.getTime();
+}
+
+export const WEEKDAY_LONG_VI = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+export const WEEKDAY_SHORT_VI = ["CN", "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7"];
 
 function pad2(n: number): string {
   return String(n).padStart(2, "0");

@@ -9,6 +9,7 @@ const TABS = [
   { href: "/", label: "Điểm danh", icon: "🏡" },
   { href: "/pomodoro", label: "Pomodoro", icon: "🍅" },
   { href: "/explore", label: "Khám phá", icon: "🧭" },
+  { href: "/goals", label: "Mục tiêu", icon: "🎯" },
   { href: "/collection", label: "Bộ sưu tập", icon: "📖" },
   { href: "/settings", label: "Cài đặt", icon: "⏰" },
 ];
